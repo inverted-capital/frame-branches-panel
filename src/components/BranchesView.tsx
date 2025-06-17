@@ -171,7 +171,7 @@ const BranchesView: React.FC = () => {
     : null
 
   return (
-    <div className="animate-fadeIn">
+    <div className="animate-fadeIn p-6">
       <h1 className="text-2xl font-bold mb-6 flex items-center">
         <Git className="mr-2" size={24} />
         Git History
