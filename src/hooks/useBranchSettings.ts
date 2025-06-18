@@ -26,6 +26,7 @@ const useBranchSettings = () => {
 
   const update = async (newData: BranchSettings): Promise<void> => {
     setData(newData)
+    if (!artifact) return
     artifact.files.write.json('branchSettings.json', newData as JsonValue)
     await artifact.branch.write.commit('Update branch settings')
   }
