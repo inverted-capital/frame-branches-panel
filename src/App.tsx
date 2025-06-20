@@ -3,15 +3,12 @@ import {
   Github as Git,
   GitBranch,
   GitMerge,
-  GitCommit,
   GitPullRequest,
   Search,
   Scissors,
   RefreshCw,
-  Check,
   X,
   Tag,
-  Clock,
   Filter,
   ArrowDown,
   ArrowUp
@@ -20,7 +17,10 @@ import { useFrame } from '@artifact/client/hooks'
 import type { BranchScope } from '@artifact/client/api'
 import BranchTree from './components/BranchTree'
 import RemotesList from './components/RemotesList'
-import useCommitHistory from './hooks/useCommitHistory'
+import CommitList from './components/CommitList'
+import CommitDiff from './components/CommitDiff'
+import { useCommit } from '@artifact/client/hooks'
+import { EMPTY_COMMIT } from '@artifact/client/api'
 
 const App: React.FC = () => {
   const frame = useFrame()
@@ -31,20 +31,6 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'graph' | 'branches' | 'tags'>(
     'graph'
   )
-
-  const commits = useCommitHistory(selectedBranch)
-  const filteredCommits = (commits ?? []).filter((commit) => {
-    const matchesSearch =
-      searchTerm === '' ||
-      commit.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      commit.author.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      commit.shortHash.toLowerCase().includes(searchTerm.toLowerCase())
-
-    const matchesBranch =
-      selectedBranch === null || commit.branch === selectedBranch
-
-    return matchesSearch && matchesBranch
-  })
 
   const handleCommitSelect = (commitId: string) => {
     if (selectedCommit === commitId) {
@@ -75,9 +61,7 @@ const App: React.FC = () => {
     })
   }
 
-  const selectedCommitDetails = selectedCommit
-    ? (commits?.find((c) => c.id === selectedCommit) ?? null)
-    : null
+  const selectedCommitDetails = useCommit(selectedCommit ?? EMPTY_COMMIT)
 
   return (
     <div className="animate-fadeIn p-6">
@@ -210,56 +194,18 @@ const App: React.FC = () => {
                 </div>
 
                 <div className="mt-4">
-                  {filteredCommits.map((commit) => (
-                    <div
-                      key={commit.id}
-                      className={`border-b border-gray-100 p-3 hover:bg-gray-50 cursor-pointer transition-colors ${selectedCommit === commit.id ? 'bg-blue-50' : ''}`}
-                      onClick={() => handleCommitSelect(commit.id)}
-                    >
-                      <div className="flex items-start">
-                        <div className="text-gray-500 mr-3 mt-1">
-                          <GitCommit size={16} />
-                        </div>
-                        <div className="flex-1">
-                          <div className="font-medium">{commit.message}</div>
-                          <div className="flex items-center text-sm mt-1">
-                            <span className="text-blue-600 font-mono">
-                              {commit.shortHash}
-                            </span>
-                            <span className="mx-2 text-gray-400">•</span>
-                            <span className="text-gray-600">
-                              {commit.author}
-                            </span>
-                            <span className="mx-2 text-gray-400">•</span>
-                            <span className="text-gray-500 flex items-center">
-                              <Clock size={12} className="mr-1" />
-                              {getCommitDate(commit.date)}
-                            </span>
-                          </div>
-                          <div className="flex items-center mt-1">
-                            <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded-full mr-2">
-                              {commit.branch}
-                            </span>
-                            {commit.tags?.map((tag) => (
-                              <span
-                                key={tag}
-                                className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full mr-2"
-                              >
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                  <CommitList
+                    selectedCommit={selectedCommit}
+                    onSelect={handleCommitSelect}
+                    filter={searchTerm}
+                  />
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {showCommitDetails && selectedCommitDetails && (
+        {showCommitDetails && selectedCommit && (
           <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-auto">
               <div className="flex items-center justify-between p-4 border-b border-gray-200">
@@ -272,92 +218,60 @@ const App: React.FC = () => {
                 </button>
               </div>
               <div className="p-4">
-                <div className="mb-4">
-                  <div className="text-xl font-medium mb-2">
-                    {selectedCommitDetails.message}
-                  </div>
-                  <div className="flex items-center text-sm">
-                    <div className="font-mono bg-gray-100 px-2 py-1 rounded text-blue-700">
-                      {selectedCommitDetails.hash}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <div className="text-sm font-medium text-gray-500">
-                      Author
-                    </div>
-                    <div>{selectedCommitDetails.author}</div>
-                  </div>
-                  <div>
-                    <div className="text-sm font-medium text-gray-500">
-                      Date
-                    </div>
-                    <div>{getCommitDate(selectedCommitDetails.date)}</div>
-                  </div>
-                  <div>
-                    <div className="text-sm font-medium text-gray-500">
-                      Branch
-                    </div>
-                    <div className="flex items-center">
-                      <GitBranch size={14} className="mr-1 text-purple-600" />
-                      <span>{selectedCommitDetails.branch}</span>
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-sm font-medium text-gray-500">
-                      Tags
-                    </div>
-                    <div>
-                      {selectedCommitDetails.tags &&
-                      selectedCommitDetails.tags.length > 0 ? (
-                        <div className="flex items-center">
-                          <Tag size={14} className="mr-1 text-green-600" />
-                          <span>{selectedCommitDetails.tags.join(', ')}</span>
-                        </div>
-                      ) : (
-                        <span className="text-gray-400">No tags</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="border-t border-gray-200 pt-4">
-                  <h4 className="font-medium mb-2">Actions</h4>
-                  <div className="flex flex-wrap gap-2">
-                    <button className="px-3 py-1.5 bg-blue-50 text-blue-600 rounded flex items-center text-sm hover:bg-blue-100">
-                      <GitBranch size={14} className="mr-1" />
-                      Create Branch
-                    </button>
-                    <button className="px-3 py-1.5 bg-purple-50 text-purple-600 rounded flex items-center text-sm hover:bg-purple-100">
-                      <Tag size={14} className="mr-1" />
-                      Create Tag
-                    </button>
-                    <button className="px-3 py-1.5 bg-green-50 text-green-600 rounded flex items-center text-sm hover:bg-green-100">
-                      <Check size={14} className="mr-1" />
-                      Checkout
-                    </button>
-                    <button className="px-3 py-1.5 bg-orange-50 text-orange-600 rounded flex items-center text-sm hover:bg-orange-100">
-                      <Scissors size={14} className="mr-1" />
-                      Cherry Pick
-                    </button>
-                  </div>
-                </div>
-
-                <div className="border-t border-gray-200 mt-4 pt-4">
-                  <h4 className="font-medium mb-2">Changes</h4>
-                  <div className="bg-gray-50 p-4 rounded-md border border-gray-200 overflow-auto max-h-64">
-                    <div className="font-mono text-sm text-gray-600">
-                      <div className="text-green-600">
-                        + Added feature components
+                {selectedCommitDetails ? (
+                  <>
+                    <div className="mb-4">
+                      <div className="text-xl font-medium mb-2">
+                        {selectedCommitDetails.message}
                       </div>
-                      <div className="text-green-600">+ Updated API client</div>
-                      <div className="text-red-600">- Removed legacy code</div>
-                      <div className="text-gray-600"> Modified test cases</div>
+                      <div className="flex items-center text-sm">
+                        <div className="font-mono bg-gray-100 px-2 py-1 rounded text-blue-700">
+                          {selectedCommit}
+                        </div>
+                      </div>
                     </div>
+
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <div className="text-sm font-medium text-gray-500">
+                          Author
+                        </div>
+                        <div>{selectedCommitDetails.author.name}</div>
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium text-gray-500">
+                          Date
+                        </div>
+                        <div>
+                          {getCommitDate(
+                            new Date(
+                              (selectedCommitDetails.author.timestamp +
+                                selectedCommitDetails.author.timezoneOffset *
+                                  60) *
+                                1000
+                            ).toISOString()
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="border-t border-gray-200 mt-4 pt-4">
+                      <h4 className="font-medium mb-2">Changes</h4>
+                      <div className="bg-gray-50 p-4 rounded-md border border-gray-200 overflow-auto max-h-64">
+                        <CommitDiff oid={selectedCommit} />
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div>
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <div
+                        key={i}
+                        className="animate-pulse h-4 bg-gray-100 rounded mb-2"
+                      ></div>
+                    ))}
                   </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
