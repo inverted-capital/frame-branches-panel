@@ -16,26 +16,18 @@ import {
   ArrowDown,
   ArrowUp
 } from 'lucide-react'
-import useBranchSettings from './hooks/useBranchSettings'
-import { useFrame, useArtifact } from '@artifact/client/hooks'
+import { useFrame } from '@artifact/client/hooks'
 import type { BranchScope } from '@artifact/client/api'
 import BranchTree from './components/BranchTree'
 import RemotesList from './components/RemotesList'
 import useCommitHistory from './hooks/useCommitHistory'
 
 const App: React.FC = () => {
-  const { data, update } = useBranchSettings()
   const frame = useFrame()
-  const artifact = useArtifact()
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCommit, setSelectedCommit] = useState<string | null>(null)
-  const [selectedBranch, setSelectedBranch] = useState<string | null>(
-    data.selectedBranch || 'main'
-  )
+  const [selectedBranch, setSelectedBranch] = useState<string | null>('main')
   const [showCommitDetails, setShowCommitDetails] = useState<boolean>(false)
-  const [showNewBranch, setShowNewBranch] = useState(false)
-  const [showFork, setShowFork] = useState(false)
-  const [branchNameInput, setBranchNameInput] = useState('')
   const [activeTab, setActiveTab] = useState<'graph' | 'branches' | 'tags'>(
     'graph'
   )
@@ -66,31 +58,10 @@ const App: React.FC = () => {
 
   const handleBranchSelect = (branchName: string) => {
     setSelectedBranch(branchName)
-    update({ selectedBranch: branchName })
     frame.onSelection?.({
       ...(frame.target as BranchScope),
       branch: branchName
     })
-  }
-
-  const handleCreateBranch = async () => {
-    if (!artifact) return
-    const base = artifact.checkout({
-      branch: selectedBranch || (frame.target as BranchScope).branch
-    })
-    await base.branch.write.fork({ path: branchNameInput })
-    setShowNewBranch(false)
-    setBranchNameInput('')
-  }
-
-  const handleForkBranch = async () => {
-    if (!artifact) return
-    const base = artifact.checkout({
-      branch: selectedBranch || (frame.target as BranchScope).branch
-    })
-    await base.branch.write.fork({ path: branchNameInput })
-    setShowFork(false)
-    setBranchNameInput('')
   }
 
   const getCommitDate = (dateString: string) => {
@@ -142,20 +113,6 @@ const App: React.FC = () => {
             <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="font-medium">Branches</h3>
-                <div className="space-x-2">
-                  <button
-                    className="px-2 py-1 text-sm bg-gray-50 rounded hover:bg-gray-100"
-                    onClick={() => setShowNewBranch(true)}
-                  >
-                    New Branch
-                  </button>
-                  <button
-                    className="px-2 py-1 text-sm bg-gray-50 rounded hover:bg-gray-100"
-                    onClick={() => setShowFork(true)}
-                  >
-                    Fork
-                  </button>
-                </div>
               </div>
 
               <BranchTree
@@ -401,66 +358,6 @@ const App: React.FC = () => {
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {showNewBranch && (
-          <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-4 w-80">
-              <h3 className="font-medium mb-2">Create Branch</h3>
-              <input
-                type="text"
-                className="w-full border border-gray-300 rounded px-2 py-1 mb-3"
-                value={branchNameInput}
-                onChange={(e) => setBranchNameInput(e.target.value)}
-                placeholder="Branch name"
-              />
-              <div className="flex justify-end space-x-2">
-                <button
-                  className="px-2 py-1 text-sm border rounded"
-                  onClick={() => setShowNewBranch(false)}
-                >
-                  Cancel
-                </button>
-                <button
-                  className="px-2 py-1 text-sm bg-blue-500 text-white rounded disabled:opacity-50"
-                  onClick={handleCreateBranch}
-                  disabled={!branchNameInput.trim()}
-                >
-                  Create
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {showFork && (
-          <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-4 w-80">
-              <h3 className="font-medium mb-2">Fork Branch</h3>
-              <input
-                type="text"
-                className="w-full border border-gray-300 rounded px-2 py-1 mb-3"
-                value={branchNameInput}
-                onChange={(e) => setBranchNameInput(e.target.value)}
-                placeholder="Branch name"
-              />
-              <div className="flex justify-end space-x-2">
-                <button
-                  className="px-2 py-1 text-sm border rounded"
-                  onClick={() => setShowFork(false)}
-                >
-                  Cancel
-                </button>
-                <button
-                  className="px-2 py-1 text-sm bg-blue-500 text-white rounded disabled:opacity-50"
-                  onClick={handleForkBranch}
-                  disabled={!branchNameInput.trim()}
-                >
-                  Fork
-                </button>
               </div>
             </div>
           </div>
