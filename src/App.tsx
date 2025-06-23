@@ -21,9 +21,11 @@ import CommitList from './components/CommitList'
 import CommitDiff from './components/CommitDiff'
 import { useCommit } from '@artifact/client/hooks'
 import { EMPTY_COMMIT } from '@artifact/client/api'
+import useViewport from './hooks/useViewport'
 
 const App: React.FC = () => {
   const frame = useFrame()
+  const viewport = useViewport()
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCommit, setSelectedCommit] = useState<string | null>(null)
   const [selectedBranch, setSelectedBranch] = useState<string | null>('main')
@@ -206,7 +208,16 @@ const App: React.FC = () => {
         </div>
 
         {showCommitDetails && selectedCommit && (
-          <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50">
+          <div
+            style={{
+              position: 'absolute',
+              top: viewport.scrollY,
+              left: viewport.scrollX,
+              width: viewport.width,
+              height: viewport.height
+            }}
+            className="bg-black/20 flex items-center justify-center z-50"
+          >
             <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-auto">
               <div className="flex items-center justify-between p-4 border-b border-gray-200">
                 <h3 className="text-lg font-medium">Commit Details</h3>
