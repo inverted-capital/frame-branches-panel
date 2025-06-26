@@ -2,13 +2,9 @@ import React, { useState } from 'react'
 import {
   Github as Git,
   GitBranch,
-  GitMerge,
-  GitPullRequest,
   Search,
-  Scissors,
   RefreshCw,
   X,
-  Tag,
   Filter,
   ArrowDown,
   ArrowUp
@@ -16,9 +12,9 @@ import {
 import { useFrame } from '@artifact/client/hooks'
 import type { BranchScope } from '@artifact/client/api'
 import BranchTree from './components/BranchTree'
-import RemotesList from './components/RemotesList'
 import CommitList from './components/CommitList'
 import CommitDiff from './components/CommitDiff'
+import BranchWriteActions from './components/BranchWriteActions'
 import { useCommit } from '@artifact/client/hooks'
 import { EMPTY_COMMIT } from '@artifact/client/api'
 import useViewport from './hooks/useViewport'
@@ -30,9 +26,7 @@ const App: React.FC = () => {
   const [selectedCommit, setSelectedCommit] = useState<string | null>(null)
   const [selectedBranch, setSelectedBranch] = useState<string | null>('main')
   const [showCommitDetails, setShowCommitDetails] = useState<boolean>(false)
-  const [activeTab, setActiveTab] = useState<'graph' | 'branches' | 'tags'>(
-    'graph'
-  )
+  const [activeTab, setActiveTab] = useState<'graph' | 'tags'>('graph')
 
   const handleCommitSelect = (commitId: string) => {
     if (selectedCommit === commitId) {
@@ -42,6 +36,11 @@ const App: React.FC = () => {
       setSelectedCommit(commitId)
       setShowCommitDetails(true)
     }
+    frame.onSelection?.({
+      ...(frame.target as BranchScope),
+      branch: selectedBranch ?? (frame.target as BranchScope).branch,
+      commit: commitId
+    })
   }
 
   const handleBranchSelect = (branchName: string) => {
@@ -76,9 +75,11 @@ const App: React.FC = () => {
         <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
           <div className="flex items-center">
             <div className="flex-1">
-              <h2 className="text-lg font-medium">Example Repo</h2>
+              <h2 className="text-lg font-medium">
+                {(frame.target as BranchScope).repo}
+              </h2>
               <p className="text-sm text-gray-600">
-                Mock repository description
+                branch: {(frame.target as BranchScope).branch}
               </p>
             </div>
             <div className="flex items-center space-x-2">
@@ -105,30 +106,11 @@ const App: React.FC = () => {
                 selected={selectedBranch}
                 onSelect={handleBranchSelect}
               />
-
-              <RemotesList />
             </div>
 
             <div className="bg-white rounded-lg border border-gray-200 p-4">
               <h3 className="font-medium mb-3">Quick Actions</h3>
-              <div className="space-y-2">
-                <button className="w-full flex items-center p-2 bg-gray-50 rounded hover:bg-gray-100 transition-colors text-sm">
-                  <GitMerge size={16} className="mr-2 text-purple-600" />
-                  Merge Branches
-                </button>
-                <button className="w-full flex items-center p-2 bg-gray-50 rounded hover:bg-gray-100 transition-colors text-sm">
-                  <Tag size={16} className="mr-2 text-green-600" />
-                  Create Tag
-                </button>
-                <button className="w-full flex items-center p-2 bg-gray-50 rounded hover:bg-gray-100 transition-colors text-sm">
-                  <Scissors size={16} className="mr-2 text-orange-600" />
-                  Cherry Pick
-                </button>
-                <button className="w-full flex items-center p-2 bg-gray-50 rounded hover:bg-gray-100 transition-colors text-sm">
-                  <GitPullRequest size={16} className="mr-2 text-blue-600" />
-                  Create Pull Request
-                </button>
-              </div>
+              <BranchWriteActions branch={selectedBranch ?? 'main'} />
             </div>
           </div>
 
@@ -140,12 +122,6 @@ const App: React.FC = () => {
                   onClick={() => setActiveTab('graph')}
                 >
                   Commit Graph
-                </button>
-                <button
-                  className={`px-4 py-3 text-sm font-medium ${activeTab === 'branches' ? 'text-blue-600 border-b-2 border-blue-500' : 'text-gray-600 hover:text-gray-800'}`}
-                  onClick={() => setActiveTab('branches')}
-                >
-                  Branches
                 </button>
                 <button
                   className={`px-4 py-3 text-sm font-medium ${activeTab === 'tags' ? 'text-blue-600 border-b-2 border-blue-500' : 'text-gray-600 hover:text-gray-800'}`}
