@@ -20,7 +20,6 @@ import CommitList from './components/CommitList'
 import CommitDiff from './components/CommitDiff'
 import BranchWriteActions from './components/BranchWriteActions'
 import { useCommit } from '@artifact/client/hooks'
-import { EMPTY_COMMIT } from '@artifact/client/api'
 import useViewport from './hooks/useViewport'
 
 const App: React.FC = () => {
@@ -71,7 +70,7 @@ const App: React.FC = () => {
     })
   }
 
-  const selectedCommitDetails = useCommit(selectedCommit ?? EMPTY_COMMIT)
+  const selectedCommitDetails = useCommit(selectedCommit)
 
   if (!isRepoScope(frame.target)) {
     return <div className="p-6 text-gray-600">No repository selected.</div>
