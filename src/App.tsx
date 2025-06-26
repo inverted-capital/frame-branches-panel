@@ -10,7 +10,11 @@ import {
   ArrowUp
 } from 'lucide-react'
 import { useFrame } from '@artifact/client/hooks'
-import type { BranchScope } from '@artifact/client/api'
+import {
+  GENESIS_BRANCH,
+  isBranchScope,
+  isRepoScope
+} from '@artifact/client/api'
 import BranchTree from './components/BranchTree'
 import CommitList from './components/CommitList'
 import CommitDiff from './components/CommitDiff'
@@ -22,9 +26,14 @@ import useViewport from './hooks/useViewport'
 const App: React.FC = () => {
   const frame = useFrame()
   const viewport = useViewport()
+  const targetBranch = isBranchScope(frame.target)
+    ? frame.target.branch
+    : undefined
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCommit, setSelectedCommit] = useState<string | null>(null)
-  const [selectedBranch, setSelectedBranch] = useState<string | null>('main')
+  const [selectedBranch, setSelectedBranch] = useState<string>(
+    targetBranch ?? GENESIS_BRANCH
+  )
   const [showCommitDetails, setShowCommitDetails] = useState<boolean>(false)
   const [activeTab, setActiveTab] = useState<'graph' | 'tags'>('graph')
 
@@ -37,8 +46,8 @@ const App: React.FC = () => {
       setShowCommitDetails(true)
     }
     frame.onSelection?.({
-      ...(frame.target as BranchScope),
-      branch: selectedBranch ?? (frame.target as BranchScope).branch,
+      ...frame.target,
+      branch: selectedBranch,
       commit: commitId
     })
   }
@@ -46,7 +55,7 @@ const App: React.FC = () => {
   const handleBranchSelect = (branchName: string) => {
     setSelectedBranch(branchName)
     frame.onSelection?.({
-      ...(frame.target as BranchScope),
+      ...frame.target,
       branch: branchName
     })
   }
@@ -64,6 +73,10 @@ const App: React.FC = () => {
 
   const selectedCommitDetails = useCommit(selectedCommit ?? EMPTY_COMMIT)
 
+  if (!isRepoScope(frame.target)) {
+    return <div className="p-6 text-gray-600">No repository selected.</div>
+  }
+
   return (
     <div className="animate-fadeIn p-6">
       <h1 className="text-2xl font-bold mb-6 flex items-center">
@@ -75,12 +88,8 @@ const App: React.FC = () => {
         <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
           <div className="flex items-center">
             <div className="flex-1">
-              <h2 className="text-lg font-medium">
-                {(frame.target as BranchScope).repo}
-              </h2>
-              <p className="text-sm text-gray-600">
-                branch: {(frame.target as BranchScope).branch}
-              </p>
+              <h2 className="text-lg font-medium">{frame.target.repo}</h2>
+              <p className="text-sm text-gray-600">branch: {selectedBranch}</p>
             </div>
             <div className="flex items-center space-x-2">
               <button className="px-3 py-1.5 bg-blue-50 text-blue-600 rounded flex items-center hover:bg-blue-100 transition-colors text-sm">
@@ -110,7 +119,7 @@ const App: React.FC = () => {
 
             <div className="bg-white rounded-lg border border-gray-200 p-4">
               <h3 className="font-medium mb-3">Quick Actions</h3>
-              <BranchWriteActions branch={selectedBranch ?? 'main'} />
+              <BranchWriteActions branch={selectedBranch} />
             </div>
           </div>
 
