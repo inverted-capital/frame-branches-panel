@@ -71,6 +71,15 @@ const BranchTree: React.FC<BranchTreeProps> = ({ selected, onSelect }) => {
   if (!branches) return null
   return (
     <div className="space-y-1">
+      <div
+        className={`flex items-center p-1 rounded cursor-pointer font-semibold italic ${
+          selected === '/' ? 'bg-blue-50 text-blue-700' : 'hover:bg-gray-50'
+        }`}
+        onClick={() => onSelect('/')}
+      >
+        <GitBranch size={14} className="mr-1 text-gray-500" />
+        <span className="text-sm">/ (genesis)</span>
+      </div>
       {branches.map((name) => (
         <BranchNode
           key={name}
