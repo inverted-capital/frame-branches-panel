@@ -20,11 +20,9 @@ import CommitList from './components/CommitList'
 import CommitDiff from './components/CommitDiff'
 import BranchWriteActions from './components/BranchWriteActions'
 import { useCommit } from '@artifact/client/hooks'
-import useViewport from './hooks/useViewport'
 
 const App: React.FC = () => {
   const frame = useFrame()
-  const viewport = useViewport()
   const targetBranch = isBranchScope(frame.target)
     ? frame.target.branch
     : undefined
@@ -70,7 +68,7 @@ const App: React.FC = () => {
     })
   }
 
-  const selectedCommitDetails = useCommit(selectedCommit)
+  const selectedCommitDetails = useCommit(selectedCommit || undefined)
 
   if (!isRepoScope(frame.target)) {
     return <div className="p-6 text-gray-600">No repository selected.</div>
@@ -192,16 +190,7 @@ const App: React.FC = () => {
         </div>
 
         {showCommitDetails && selectedCommit && (
-          <div
-            style={{
-              position: 'absolute',
-              top: viewport.scrollY,
-              left: viewport.scrollX,
-              width: viewport.width,
-              height: viewport.height
-            }}
-            className="bg-black/20 flex items-center justify-center z-50"
-          >
+          <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-auto">
               <div className="flex items-center justify-between p-4 border-b border-gray-200">
                 <h3 className="text-lg font-medium">Commit Details</h3>
